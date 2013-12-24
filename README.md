@@ -25,4 +25,4 @@ iOS framework includes support for iOS Simulator as well.
 Now just drag & drop the framework into your Xcode project and you're good to go.
 
 ## Under the Hood
-If you want to know what exactly does this script do, check out the blog post (not yet ready...)
+If you want to know what exactly does this script do, check out the blog post (http://mgrebenets.github.io/shark2-iosx)
