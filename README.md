@@ -1,4 +1,4 @@
-Build Shark 2.3.4 Framework for iOS & OSX
+Build Shark Framework for iOS & OSX
 ===
 ###### Using Xcode5 (armv7, armv7s, arm64, i386, x86_64)
 
@@ -7,7 +7,7 @@ SHARK provides libraries for the design of adaptive systems, including methods f
 
 Find out more on the [project website](https://sourceforge.net/projects/shark-project/)
 
-This script is designed to build version 2.3.4 of the library, not the latest 3.0 version.
+This script is designed to build version **2.3.4*** of the library, not the latest 3.0 version.
 
 ### Build Framework
 With this script building the framework is as easy as
