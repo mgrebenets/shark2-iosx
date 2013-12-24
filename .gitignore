@@ -1,0 +1,9 @@
+build/
+framework/
+lib/
+build/
+*.zip
+src/
+release/
+tmp/
+
