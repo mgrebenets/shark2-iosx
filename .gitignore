@@ -1,0 +1,9 @@
+# git ignore
+src/
+build/
+release/
+lib/
+tmp/
+framework/
+*.zip
+

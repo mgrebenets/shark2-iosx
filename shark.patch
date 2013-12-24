@@ -1,0 +1,282 @@
+diff -crB shark2_orig/CMakeLists.txt shark2_patched/CMakeLists.txt
+*** shark2_orig/CMakeLists.txt	2011-03-28 19:16:36.000000000 +1100
+--- shark2_patched/CMakeLists.txt	2013-12-23 14:56:45.000000000 +1100
+***************
+*** 585,591 ****
+    #SET_TARGET_PROPERTIES( shark PROPERTIES DEBUG_POSTFIX _debug )
+    SET( LINK_LIBRARIES )
+  ELSE( WIN32 )
+!   ADD_LIBRARY( shark SHARED ${SRCS} )
+    SET_TARGET_PROPERTIES( shark PROPERTIES DEBUG_POSTFIX _debug )
+  ENDIF( WIN32 )
+  
+--- 585,592 ----
+    #SET_TARGET_PROPERTIES( shark PROPERTIES DEBUG_POSTFIX _debug )
+    SET( LINK_LIBRARIES )
+  ELSE( WIN32 )
+!   #ADD_LIBRARY( shark SHARED ${SRCS} )
+!   ADD_LIBRARY( shark STATIC ${SRCS} )
+    SET_TARGET_PROPERTIES( shark PROPERTIES DEBUG_POSTFIX _debug )
+  ENDIF( WIN32 )
+  
+diff -crB shark2_orig/include/FileUtil/FileUtil.h shark2_patched/include/FileUtil/FileUtil.h
+*** shark2_orig/include/FileUtil/FileUtil.h	2008-11-26 22:02:39.000000000 +1100
+--- shark2_patched/include/FileUtil/FileUtil.h	2013-12-20 13:57:45.000000000 +1100
+***************
+*** 343,349 ****
+   */
+  template < class T >
+  inline void io(std::istream& is, std::ostream& os, const std::string& token,
+! 			   T& val, const T& defval, iotype type)
+  {
+  	switch (type)
+  	{
+--- 343,349 ----
+   */
+  template < class T >
+  inline void io(std::istream& is, std::ostream& os, const std::string& token,
+! 			   T& val, const T& defval, FileUtil::iotype type)
+  {
+  	switch (type)
+  	{
+***************
+*** 361,425 ****
+  
+  
+  
+! //===========================================================================
+! /*!
+!  *  \brief An easy to use interface to perform the three actions needed
+!  *         for a token. A very strict version, used for a special format.
+!  *
+!  *  You can use this function to specify all information for a token
+!  *  once and then initialize it with a default value or read a new
+!  *  value for it from an input stream or write the token and its
+!  *  already given value to an output stream. This can be done by using
+!  *  different values for the action indicator \em type.  <br>
+!  *  This function here is used to prevent
+!  *  a disadvantage of #io, when reading a token value from an input
+!  *  stream. There a string read from the input stream is
+!  *  identified as the searched token when this searched token is a prefix of
+!  *  this string, e.g.
+!  *  if you are searching for a token "a" and one line
+!  *  of the input stream begins with "ab".  <br>
+!  *  This is especially dangerous when using short token names.
+!  *
+!  *      \param  is     The input stream used, when reading a token value.
+!  *      \param  os     The output stream used, when writing the token and
+!  *                     its value.
+!  *      \param  token  The token used for initializing/reading/writing.
+!  *      \param  val    Used to store the current value of the token.
+!  *      \param  defval The default value that is used for initialization.
+!  *      \param  type   The action indicator. See #iotype definition
+!  *                     for the different values and their meanings.
+!  *      \return None.
+!  *
+!  *  \author  R. Alberts
+!  *  \date    1999
+!  *
+!  *  \par Changes
+!  *      2002-01-03, ra <br>
+!  *      Renamed to from "io2" to "io_strict" for unification,
+!  *      new function "printTo_strict" added.
+!  *
+!  *  \par Status
+!  *      stable
+!  *
+!  */
+! template < class T >
+! inline void io_strict(std::istream& is, std::ostream& os,
+! 					  const std::string& token,
+! 					  T& val, const T& defval, iotype type)
+! {
+! 	switch (type)
+! 	{
+! 	case SetDefault :
+! 		val = defval;
+! 		break;
+! 	case ScanFrom :
+! 		scanFrom_strict(is, token, val, true);
+! 		break;
+! 	case PrintTo :
+! 		printTo_strict(os, token, val);
+! 		break;
+! 	}
+! }
+  
+  
+  //===========================================================================
+--- 361,367 ----
+  
+  
+  
+! 
+  
+  
+  //===========================================================================
+***************
+*** 656,664 ****
+--- 598,669 ----
+  	return os.good();
+  }
+  
++ //===========================================================================
++ /*!
++  *  \brief An easy to use interface to perform the three actions needed
++  *         for a token. A very strict version, used for a special format.
++  *
++  *  You can use this function to specify all information for a token
++  *  once and then initialize it with a default value or read a new
++  *  value for it from an input stream or write the token and its
++  *  already given value to an output stream. This can be done by using
++  *  different values for the action indicator \em type.  <br>
++  *  This function here is used to prevent
++  *  a disadvantage of #io, when reading a token value from an input
++  *  stream. There a string read from the input stream is
++  *  identified as the searched token when this searched token is a prefix of
++  *  this string, e.g.
++  *  if you are searching for a token "a" and one line
++  *  of the input stream begins with "ab".  <br>
++  *  This is especially dangerous when using short token names.
++  *
++  *      \param  is     The input stream used, when reading a token value.
++  *      \param  os     The output stream used, when writing the token and
++  *                     its value.
++  *      \param  token  The token used for initializing/reading/writing.
++  *      \param  val    Used to store the current value of the token.
++  *      \param  defval The default value that is used for initialization.
++  *      \param  type   The action indicator. See #iotype definition
++  *                     for the different values and their meanings.
++  *      \return None.
++  *
++  *  \author  R. Alberts
++  *  \date    1999
++  *
++  *  \par Changes
++  *      2002-01-03, ra <br>
++  *      Renamed to from "io2" to "io_strict" for unification,
++  *      new function "printTo_strict" added.
++  *
++  *  \par Status
++  *      stable
++  *
++  */
++ 
+  
++ template < class T >
++ inline void io_strict(std::istream& is, std::ostream& os,
++ 					  const std::string& token,
++ 					  T& val, const T& defval, FileUtil::iotype type)
++ {
++ 	switch (type)
++ 	{
++ 	case FileUtil::SetDefault :
++ 		val = defval;
++ 		break;
++ 	case FileUtil::ScanFrom :
++ 		scanFrom_strict(is, token, val, true);
++ 		break;
++ 	case FileUtil::PrintTo :
++ 		printTo_strict(os, token, val);
++ 		break;
++ 	}
+  }
+  
++ }
++ 
++ 
++ 
+  
+  #endif
+  
+diff -crB shark2_orig/include/Mixture/RandomVector.h shark2_patched/include/Mixture/RandomVector.h
+*** shark2_orig/include/Mixture/RandomVector.h	2008-01-09 05:48:00.000000000 +1100
+--- shark2_patched/include/Mixture/RandomVector.h	2013-12-20 13:57:45.000000000 +1100
+***************
+*** 72,78 ****
+  		double l = 0;
+  
+  		for (unsigned k = x.dim(0); k--;) {
+! 			l += log(Shark::max(p(x[ k ]), 1e-100));        // !!!
+  		}
+  
+  		return l;
+--- 72,78 ----
+  		double l = 0;
+  
+  		for (unsigned k = x.dim(0); k--;) {
+! 			l += log(Shark::max(this->p(x[ k ]), 1e-100));        // !!!
+  		}
+  
+  		return l;
+diff -crB shark2_orig/include/SharkDefs.h shark2_patched/include/SharkDefs.h
+*** shark2_orig/include/SharkDefs.h	2011-03-03 02:52:27.000000000 +1100
+--- shark2_patched/include/SharkDefs.h	2013-12-20 16:21:15.000000000 +1100
+***************
+*** 73,79 ****
+--- 73,96 ----
+  typedef long SharkInt64;
+  #endif
+  
++ #if defined(__APPLE__) && defined(__MACH__)
++ // #warning	/* Apple OSX and iOS (Darwin). ------------------------------ */
++ #include <TargetConditionals.h>
++ #if TARGET_IPHONE_SIMULATOR == 1
++ // #warning	/* iOS in Xcode simulator */
++ #define finite(x) isfinite(x)
++ #elif TARGET_OS_IPHONE == 1
++ // #warning	/* iOS on iPhone, iPad, etc. */
++ #define finite(x) isfinite(x)
++ // #define drem(x, y) remainder(x, y)
++ #elif TARGET_OS_MAC == 1
++ // #warning	/* OSX */
++ #endif
++ #endif
+  
++ // #if TARGET_OS_IPHONE && !(TARGET_IPHONE_SIMULATOR)
++ // #define finite(x) isfinite(x)
++ // #endif
+  ////////////////////////////////////////////////////////////
+  // constants
+  
+diff -crB shark2_orig/src/Mixture/MixtureOfGaussians.cpp shark2_patched/src/Mixture/MixtureOfGaussians.cpp
+*** shark2_orig/src/Mixture/MixtureOfGaussians.cpp	2008-05-08 01:01:55.000000000 +1000
+--- shark2_patched/src/Mixture/MixtureOfGaussians.cpp	2013-12-20 13:57:45.000000000 +1100
+***************
+*** 50,56 ****
+  #include <Mixture/MixtureOfGaussians.h>
+  
+  #ifdef __STDC__
+! extern "C" double erf(double) throw();
+  #endif
+  
+  #ifdef _WIN32 // !!!
+--- 50,57 ----
+  #include <Mixture/MixtureOfGaussians.h>
+  
+  #ifdef __STDC__
+! // extern "C" double erf(double) throw();
+! extern "C" double erf(double);
+  #endif
+  
+  #ifdef _WIN32 // !!!
+diff -crB shark2_orig/src/ReClaM/EarlyStopping.cpp shark2_patched/src/ReClaM/EarlyStopping.cpp
+*** shark2_orig/src/ReClaM/EarlyStopping.cpp	2008-05-08 01:01:55.000000000 +1000
+--- shark2_patched/src/ReClaM/EarlyStopping.cpp	2013-12-20 13:57:45.000000000 +1100
+***************
+*** 78,84 ****
+   *      stable
+   *
+   */
+! EarlyStopping::EarlyStopping(unsigned sl = 5)
+  {
+  	GLvalue     = 0;
+  	e_opt       = MAXDOUBLE;
+--- 78,84 ----
+   *      stable
+   *
+   */
+! EarlyStopping::EarlyStopping(unsigned sl)
+  {
+  	GLvalue     = 0;
+  	e_opt       = MAXDOUBLE;
