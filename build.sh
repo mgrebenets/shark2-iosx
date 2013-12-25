@@ -14,7 +14,7 @@ usage() {
 	echo "options:"
 	echo -e "\t-c\tClean build."
 	echo -e "\t-d\tDownload source if doesn't exist."
-	echo -e "<platform>\t'ios' or 'osx'"
+	echo -e "<platform>\t'ios', 'osx' or 'universall'"
 	exit 1
 }
 
@@ -104,7 +104,6 @@ cmakeRun() {
 		-DCMAKE_CXX_FLAGS="$cxx_flags" \
 		-G "$GENERATOR" \
 		$src_dir
-
 }
 
 # buildLibrary <target> <sys-root> <cxx-flags>
@@ -147,6 +146,7 @@ buildLibrary() {
 }
 
 buildIOS() {
+	local platfrom=ios
 	echo Building for iOS...
 
 	echo Building for Device...
@@ -155,19 +155,29 @@ buildIOS() {
 	echo Building for Simulator...
 	buildLibrary sim ${XCODE_SIM_ROOT}/SDKs/iPhoneSimulator7.0.sdk "-arch i386 -arch x86_64 -mios-simulator-version-min=7.0"
 
-	echo "Lipoing the fat library"
-	[ -d $LIB_DIR/$PLATFORM ] || mkdir -p $LIB_DIR/$PLATFORM
-	$XCODE_TOOLCHAIN_BIN/lipo -create $BUILD_DIR/ios/$LIB_NAME $BUILD_DIR/sim/$LIB_NAME -o $LIB_DIR/$PLATFORM/$LIB_NAME
+	echo "Lipoing the fat iOS library"
+	[ -d $LIB_DIR/$platfrom ] || mkdir -p $LIB_DIR/$platfrom
+	$XCODE_TOOLCHAIN_BIN/lipo -create $BUILD_DIR/ios/$LIB_NAME $BUILD_DIR/sim/$LIB_NAME -o $LIB_DIR/$platfrom/$LIB_NAME
 
 	doneSection
 }
 
 buildOSX() {
+	local platform=osx
 	echo Building for OSX...
-	buildLibrary osx
+	buildLibrary $platform
 	# copy the library file
-	[ -d $LIB_DIR/$PLATFORM ] || mkdir -p $LIB_DIR/$PLATFORM
-	cp -f $BUILD_DIR/$PLATFORM/$LIB_NAME $LIB_DIR/$PLATFORM/$LIB_NAME
+	[ -d $LIB_DIR/$platform ] || mkdir -p $LIB_DIR/$platform
+	cp -f $BUILD_DIR/$platform/$LIB_NAME $LIB_DIR/$platform/$LIB_NAME
+	doneSection
+}
+
+# lipo all libraries into one fat lib
+lipoUniversalLibrary() {
+	local platform=universal
+	echo Lioping universal iOS and OSX library
+	[ -d $LIB_DIR/$platform ] || mkdir -p $LIB_DIR/$platform
+	lipo -create $LIB_DIR/ios/$LIB_NAME $LIB_DIR/osx/$LIB_NAME -o $LIB_DIR/$platform/$LIB_NAME
 	doneSection
 }
 
@@ -316,7 +326,7 @@ shift $((OPTIND-1))
 # check args
 PLATFORM="$1"
 [ -z $PLATFORM ] && usage
-[[ "$PLATFORM" != "ios" && "$PLATFORM" != "osx" ]] && usage
+[[ "$PLATFORM" != "ios" && "$PLATFORM" != "osx" && "$PLATFORM" != "universal" ]] && usage
 
 # Script body
 checkDeps
@@ -324,6 +334,10 @@ checkDeps
 [[ $CLEAN -eq 1 ]] && clean
 unpackSource
 patchSource
+# if platform is 'universal' both ios and osx will be built
 [[ "$PLATFORM" == "ios" ]] && buildIOS || buildOSX
+[[ "$PLATFORM" == "osx" ]] && buildOSX || buildIOS
+[[ "$PLATFORM" == "universal" ]] && lipoUniversalLibrary
 packageFramework $LIB_DIR/$PLATFORM/$LIB_NAME $OUTPUT_DIR/$PLATFORM
+# packageFramework $LIB_DIR/$LIB_NAME $OUTPUT_DIR
 
