@@ -184,37 +184,15 @@ patchHeaders() {
     export LANG=C
 
     # fix missing spaces in include directives
+    # fix include path for SharkDefs.h
+    # fix include paths for all components
+    # use -E for modern regex syntax and avoid those gnu vs non-gnu sed issues
+    local components="Array|Rng|LinAlg|FileUtil|EALib|MOO-EALib|ReClaM|Mixture|TimeSeries|Fuzzy"
     find $folder -type f -exec \
-        sed -i '' \
-        -e 's,#include<,#include <,g' \
-        -e 's,#include",#include ",g' \
-        {} +
-
-    # fix the include paths to be from the framework
-    find $folder -type f -exec \
-        sed -i '' \
-        -e 's,#include <SharkDefs,#include <Shark/SharkDefs,g' \
-        -e 's,#include "SharkDefs,#include "Shark/SharkDefs,g' \
-        -e 's,#include <Array/,#include <Shark/Array/,g' \
-        -e 's,#include "Array/,#include "Shark/Array/,g' \
-        -e 's,#include <Rng/,#include <Shark/Rng/,g' \
-        -e 's,#include "Rng/,#include "Shark/Rng/,g' \
-        -e 's,#include <LinAlg/,#include <Shark/LinAlg/,g' \
-        -e 's,#include "LinAlg/,#include "Shark/LinAlg/,g' \
-        -e 's,#include <FileUtil/,#include <Shark/FileUtil/,g' \
-        -e 's,#include "FileUtil/,#include "Shark/FileUtil/,g' \
-        -e 's,#include <EALib/,#include <Shark/EALib/,g' \
-        -e 's,#include "EALib/,#include "Shark/EALib/,g' \
-        -e 's,#include <MOO-EALib/,#include <Shark/MOO-EALib/,g' \
-        -e 's,#include "MOO-EALib/,#include "Shark/MOO-EALib/,g' \
-        -e 's,#include <ReClaM/,#include <Shark/ReClaM/,g' \
-        -e 's,#include "ReClaM/,#include "Shark/ReClaM/,g' \
-        -e 's,#include <Mixture/,#include <Shark/Mixture/,g' \
-        -e 's,#include "Mixture/,#include "Shark/Mixture/,g' \
-        -e 's,#include <TimeSeries/,#include <Shark/TimeSeries/,g' \
-        -e 's,#include "TimeSeries/,#include "Shark/TimeSeries/,g' \
-        -e 's,#include <Fuzzy/,#include <Shark/Fuzzy/,g' \
-        -e 's,#include "Fuzzy/,#include "Shark/Fuzzy/,g' \
+        sed -E -i '' \
+        -e "s,#include([<\"]),#include \1,g" \
+        -e "s,#include([ \t])([<\"])(SharkDefs.h),#include\1\2Shark/\3,g" \
+        -e "s,#include([ \t])([<\"])(${components}/),#include\1\2Shark/\3,g" \
         {} +
 }
 

@@ -6,4 +6,5 @@ lib/
 tmp/
 framework/
 *.zip
+_site/
 
