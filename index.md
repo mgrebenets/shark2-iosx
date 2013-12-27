@@ -316,9 +316,10 @@ The `-j16` will parallelize the build and make it way faster than plain `make`.
 It doesn't take long and in the end you'll have `libshark.a` static library. Check it with `file` utility to make sure you have all the architectures in place.
 
 {% highlight bash %}
-file build/ios/libshark.a
-file build/sim/libshark.a
-file build/osx/libshark.a
+$ file build/ios/libshark.a
+$ file build/sim/libshark.a
+$ file build/osx/libshark.a
+build/osx/libshark.a: current ar archive random library
 {% endhighlight %}
 
 *TODO* all the common stuff
