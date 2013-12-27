@@ -36,7 +36,7 @@ unzip -q shark-2.3.4.zip -d src
 {% endhighlight %}
 
 ### Patch Source Code
-That's where some fun begins. The original source code was developed with gcc 4.2, while we're trying to compile it with clang 5.0. There's been years of development since then, both in terms of compilers and c++ standards. No wonder clang fails with quite a few errors.
+That's where some fun begins. The original source code was developed with gcc 4.2, while we're trying to compile it with clang 5.0. There's been years of development since then, both in terms of compilers and C++ standards. No wonder clang fails with quite a few errors.
 
 #### Default Constructor
 Let's start with the patch that I believe might have some impact on the way you should use the library. In file `ReClam/EarlyStopping.cpp`, line 78.
@@ -205,9 +205,7 @@ This is where build system will look for all the standard library includes.
 This is optional, the prefix is used to tell `make install` where to install your library. Normally it's used when you build a shared library and then want to place it somewhere in your `/usr/local/lib`.
 
 - Build System Generator (`-G` flag)
-We plan to use `make` utility with `Makefile`, so this option will be `"Unix Makefile"`. 
-
-You'd probably ask "Why not 'Xcode' generator?". I have 2 answers for that. First, I couldn't make it work. Second, with `make` you can use all the horsepower of your build machine by running multiple compilation jobs in parallel (`-j` flag), while `xcodebuild` will do it old-style one by one as slow as possible.
+We plan to use `make` utility with `Makefile`, so this option will be `"Unix Makefiles"`. 
 
 #### Xcode Toolchain
 Let's start with asking Xcode where all the tools are.
@@ -317,59 +315,148 @@ It doesn't take long and in the end you'll have `libshark.a` static library. Che
 
 {% highlight bash %}
 $ file build/ios/libshark.a
+build/ios/libshark.a: Mach-O universal binary with 3 architectures
+build/ios/libshark.a (for architecture armv7):  current ar archive random library
+build/ios/libshark.a (for architecture armv7s): current ar archive random library
+build/ios/libshark.a (for architecture cputype (16777228) cpusubtype (0)):  current ar archive random library
+
 $ file build/sim/libshark.a
+build/sim/libshark.a: Mach-O universal binary with 2 architectures
+build/sim/libshark.a (for architecture i386): current ar archive random library
+build/sim/libshark.a (for architecture x86_64): current ar archive random library
+
 $ file build/osx/libshark.a
 build/osx/libshark.a: current ar archive random library
 {% endhighlight %}
 
-*TODO* all the common stuff
-why cmake is used, how it used, and just a note about ccmake
-- what needs to be configured
-- install prefix (not really used though)
-- compilers c/cxx and the rest of toolchain as well
-- compiler flags (cxx only), includes architecture and target (for simulator)
-- system root
-
-what are the flags for each target iOS (Device and Simulator)
-OSX
-
 ### Lipo Library
+So you have a static library for iOS Devices and another one for iOS Simulator. To have the convenience of using same framework for device and simulator you need to merge these two static libraries into one.
+
+The `lipo` utility is what you need.
+{% highlight bash %}
+mkdir -p lib/ios
+$XCODE_TOOLCHAIN_BIN/lipo -create build/ios/libshark.a build/sim/libshark.a -o lib/ios/libshark.a
+{% endhighlight %}
+
+Now run `file lib/ios/libshark.a` and make sure the fat library includes 5 architectures.
+
+If you're targeting OS X, just copy `build/osx/libshark.a` to `lib/osx`. It only includes one x86_64 architecture.
 
 ### Package Framework
+It is time to nicely wrap the static library in a neat framework package.
 
-examples below
-===
-## Update Author Attributes
+There's plenty of guides how to do that using bash script. The general steps are described below.
 
-In `_config.yml` remember to specify your own data:
+##### Create Framework Bundle
+Create the framework folder structure (bundle) with proper symbolic links. Name the framework folder as `Shark.framework`
 
-    title : My Blog =)
+{% highlight bash %}
+Shark.framework/
+├── Documentation -> Versions/Current/Documentation
+├── Headers -> Versions/Current/Headers
+├── Resources -> Versions/Current/Resources
+└── Versions
+    ├── A
+    │   ├── Documentation
+    │   ├── Headers
+    │   └── Resources
+    └── Current -> A
+{% endhighlight %}
 
-    author :
-      name : Maksym Grebenets------
-      email : mgrebenets@gmail.com
-      github : mgrebenets
+##### Copy Static Library
+Rename static library to `Shark` and copy it into framework bundle
 
-The theme should reference these variables whenever needed.
+{% highlight bash %}
+cp build/ios/libshark.a Shark.framework/Versions/A/Shark
+{% endhighlight %}
 
-## Sample Posts
+##### Copy Headers
+Copy all the headers to framework bundle `Headers` folder.
 
-This blog contains sample posts which help stage pages and blog data.
-When you don't need the samples anymore just delete the `_posts/core-samples` folder.
+Start with copying all the headers from `src/include` to framework bundle.
+Then remove unused `statistics.h` header. If you check `CMakeLists.txt` in the source folder, you'll notice that there's no `INSTALL` rule for `statistics.h` header.
 
-    $ rm -rf _posts/core-samples
-
-Here's a sample "posts list".
-
-<ul class="posts">
-  {% for post in site.posts %}
-    <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="{{ BASE_PATH }}{{ post.url }}">{{ post.title }}</a></li>
-  {% endfor %}
-</ul>
-
-## To-Do
-
-This theme is still unfinished. If you'd like to be added as a contributor, [please fork](http://github.com/plusjade/jekyll-bootstrap)!
-We need to clean up the themes, make theme usage guides with theme-specific markup examples.
+{% highlight bash %}
+cp -r src/Shark/include/* Shark.framework/Headers/
+rm Shark.framework/Headers/statistics.h
+{% endhighlight %}
 
 
+###### Patch Headers
+You might think "What's next step?" at this point, but there's some serious patching to be applied to header files.
+
+If you just copy the headers "as is", you'll run into a number of nasty compile errors when including headers from the framework. While using a shared library and running on OS X I could apply some workaround for this issue using Header Search Path and other build settings, but that's not so easy when all the headers come from a framework bundle.
+
+While trying to solve the problem I looked into another well known and well built library - `boost`. All (well, all that I've seen) the includes in the `boost` library follow the same convention: in the `#include` directive the header path starts with `boost/`, for example
+
+{% highlight c++ %}
+#include "boost/config.hpp"
+#include <boost/type_traits/remove_reference.hpp>
+{% endhighlight %}
+
+So I used `sed` to patch all the headers in the framework bundle. The patching does the following:
+- Find all includes of `SharkDefs.h` and replace with `Shark/SharkDefs.h`
+- Find all includes of library components and add `Shark/` to the include path.
+
+By components, I mean all the sub-folders in `Headers` folder:
+`Array`, `Rng`, `LinAlg`, `FileUtil`, `EALib`, `MOO-EALib`, `ReClaM`, `Mixture`, `TimeSeries`, `Fuzzy`.
+
+And then there was a number of bad-formed include statements like `#include<SharkDefs.h>` with no space after `#include`.
+
+The bash script that does the job using `sed` with modern regular expression syntax and in-place edits.
+
+{% highlight bash %}
+# avoid invalid character sequence errors
+export LC_TYPE=C
+export LANG=C
+
+# fix missing spaces in include directives
+# fix include path for SharkDefs.h
+# fix include paths for all components
+# use -E for modern regex syntax and avoid those gnu vs non-gnu sed issues
+components="Array|Rng|LinAlg|FileUtil|EALib|MOO-EALib|ReClaM|Mixture|TimeSeries|Fuzzy"
+find Shark.framework/Headers -type f -exec \
+    sed -E -i '' \
+    -e "s,#include([<\"]),#include \1,g" \
+    -e "s,#include([ \t])([<\"])(SharkDefs.h),#include\1\2Shark/\3,g" \
+    -e "s,#include([ \t])([<\"])(${components}/),#include\1\2Shark/\3,g" \
+    {} +
+{% endhighlight %}
+
+##### Create Info.plist
+The last step is to create `Info.plist` in `Shark.framework/Resources`
+
+{% highlight bash %}
+FRAMEWORK_NAME=Shark
+FRAMEWORK_CURRENT_VERSION=2.3.4
+
+cat > Shark.framework/Resources/Info.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundleExecutable</key>
+    <string>${FRAMEWORK_NAME}</string>
+    <key>CFBundleIdentifier</key>
+    <string>dk.diku.image</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>${FRAMEWORK_CURRENT_VERSION}</string>
+</dict>
+</plist>
+EOF
+{% endhighlight %}
+
+## Conclusion
+That's it!
+
+Drag & drop the framework into your Xcode project and start coding.
+
+As an improvement, I'm considering creating a [CocoaPods](cocoapods.org) pods for iOS and OSX version of the framework, so no need for stone age drag & drop thing.
