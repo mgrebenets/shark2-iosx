@@ -205,7 +205,7 @@ This is where build system will look for all the standard library includes.
 This is optional, the prefix is used to tell `make install` where to install your library. Normally it's used when you build a shared library and then want to place it somewhere in your `/usr/local/lib`.
 
 - Build System Generator (`-G` flag)
-We plan to use `make` utility with `Makefile`, so this option will be `"Unix Makefiles"`. 
+We plan to use `make` utility with `Makefile`, so this option will be `"Unix Makefiles"`.
 
 #### Xcode Toolchain
 Let's start with asking Xcode where all the tools are.
@@ -232,7 +232,7 @@ cd build/ios
 
 To configure the build, we already have `CXX_COMPILER`, `C_COMPILER`. We still need to configure is C++ Compiler Flags and System Root.
 
-Our goal is to support 3 iOS Device architectures: `armv7`, `armv7s` and `arm64`, that's where `-arch` option is used. 
+Our goal is to support 3 iOS Device architectures: `armv7`, `armv7s` and `arm64`, that's where `-arch` option is used.
 
 The System Root is the root folder of iPhone OS 7.0 SDK, it's located in the `XCODE_ARM_ROOT`, which we defined above.
 
@@ -290,7 +290,7 @@ cmake \
 ##### Compiler Test
 Now, if you tried to run any of the above commands you definitely face the "C Compiler Test" error. `cmake` checks `clang` compiler by trying to compile some test code and that check fails. I tried to use different approaches to pass the compiler test, such as setting project type to `NONE` in `CMakeLists.txt`, but nothing worked for me. So I had to come up with somewhat dirty trick to fix this problem:
 
-- Run `cmake` once with no properties set, aka "Initial Run"
+- Run `cmake` once with no properties set and no generator option, aka "Initial Run"
 
 This will pick up default C and C++ compilers, pass the compiler test, create `CMakeCache.txt` and `CMakeFiles` folder. If you `cmake` again, the compiler test won't be performed any more.
 
