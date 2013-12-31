@@ -6,3 +6,4 @@ framework/
 src/
 *.zip
 lib/
+release/
