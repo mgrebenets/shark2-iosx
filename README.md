@@ -27,11 +27,10 @@ iOS framework includes support for iOS Simulator as well.
 You might just drag & drop the framework into your Xcode project and you're good to go.
 However, I personally prefere more managed ways, that is [CocoaPods](http://cocoapods.org).
 
-So, there's `Shark-SDK` pod which you can use both for your iOS and OS X projects.
-
-At the moment, the search on http://cocoapods.org does not return any search results for `Shark-SDK`. But the podspec is already in the [Specs](https://github.com/CocoaPods/Specs/tree/master/Shark-SDK) repository, and it already showed up in RSS feed. So you can plug it in using your `Podfile`.
+So, there's [Shark-SDK](http://beta.cocoapods.org/?q=shark-sdk) pod which you can use both for your iOS and OS X projects.
 
 ``` ruby
+# Podfile
 platform :ios, :deployment_target => '6.0'
 pod 'Shark-SDK'
 
